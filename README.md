@@ -197,4 +197,4 @@ Você pode ver se a DAG apareceu no Airflow no menu DAGs da página. Se não tiv
 
 ## Apenas executando o projeto
 
-Caso você queira apenas executar o projeto, você pode clonar esse repositório e seguir até o passo 2 no item '''airflow standalone''', tendo cuidado com os pontos de atenção do 1o Passo e do 3o (configuração de paths).
+Caso você queira apenas executar o projeto, você pode clonar esse repositório e seguir até o passo 2 no item '''airflow standalone''', tendo cuidado com os pontos de atenção do 1o Passo e do 3o (configuração de paths).# Desafio_Airflow
