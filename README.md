@@ -4,21 +4,21 @@ Este desafio possui como objetivo a orquestração de dados no Airflow. Para iss
 
 ## Passo 1 - Preparando o ambiente para instalação do Airflow
 
-No VS Code, abra um terminal, crie a pasta ```airflow_tooltorial``` e abra-a. Basta escrever:
+No VS Code, abra um terminal, crie a pasta **airflow_tooltorial** e abra-a. Basta escrever:
 
 ```
 mkdir airflow_tooltorial
 cd airflow_tooltorial
 ```
 
-Feito isso, você criará um ambiente virtual do python e também um arquivo .env para criar a variável de ambiente necessária para rodar o Airflow.
+Feito isso, você criará um ambiente virtual do python e também um arquivo **.env** para criar a variável de ambiente necessária para rodar o Airflow.
 
 ```
 python3 -m venv venv
 touch .env
 ```
 
-No arquivo .env, você exportará o Airflow_home. 
+No arquivo **.env**, você exportará o Airflow_home. 
 
 ```
 export AIRFLOW_HOME=/home/nome_do_usuário/airflow_tooltorial/
@@ -26,17 +26,16 @@ export AIRFLOW_HOME=/home/nome_do_usuário/airflow_tooltorial/
 
 **Atenção:** Você deve adicionar o seu path da pasta airflow_tooltorial. Para encontrá-lo, você pode clicar com o botão direito no arquivo .env, copiar o caminho e colá-lo, apagando os itens após a última /.
 
-Agora, você precisará ativar a venv e o .env. Para isso, você deve digitar no terminal:
+Agora, você precisará ativar a **venv** e o **.env**. Para isso, você deve digitar no terminal:
 
 ```
 source venv/bin/activate
 source .env
 ```
-Obs.: Não esqueça de colocá-los no arquivo .gitignore.
 
 ## Passo 2 - Instalando o Airflow
 
-Para instalar o Airflow, você precisa dar os seguintes comandos:
+Para instalar o Airflow, você precisa teclar no terminal:
 
 ```
 AIRFLOW_VERSION=2.2.3
@@ -51,18 +50,18 @@ Feita a instalação, você dará o comando para inicializar o banco de dados, c
 airflow standalone
 ```
 
-Se tudo der certo, visitando o **localhost:8080** no navegador, você deve conseguir acessar o Airflow realizando o login. O username é **admin** e a senha você identifica enquanto estiver rodando o airflow standalone ou a partir do arquivo **standalone_admin_password.txt**.
+Se tudo der certo, visitando o **localhost:8080** no navegador, você deve conseguir acessar o Airflow realizando o login. O username é **admin** e a senha você identifica enquanto estiver rodando o **airflow standalone** ou a partir do arquivo **standalone_admin_password.txt**.
 
 ## Passo 3 - Criando a DAG com as três tasks
 
-Crie uma pasta dags e com ela aberta, crie um arquivo .py para desenvolver a DAG.
+Crie uma pasta **dags** e com ela aberta, crie um arquivo .py para desenvolver a DAG.
 
 ```
 mkdir dags
 touch tarefas.py
 ```
 
-Em tarefas.py comece a desenvolver a DAG. Faça as importações da classe DAG, dos operators e das bibliotecas necessárias.
+Em **tarefas.py** comece a desenvolver a DAG. Faça as importações da classe DAG, dos operators e das bibliotecas necessárias.
 
 ```
 from airflow.utils.edgemodifier import Label
@@ -113,22 +112,24 @@ def task1():
 A segunda tarefa é ler os dados da tabela **OrdersDetail** e realizar um ```join``` com o arquivo **output_orders.csv** criado. Além de gerar um arquivo **count.txt** com a soma da quantidade vendida com destino ao Rio de Janeiro. Use a função ```str()``` para converter o número em texto. Segue o código:
 
 ```
-p1 = pd.read_csv("./output_orders.csv")
-conn = sqlite3.connect("/home/nome_do_usuário/airflow_tooltorial/data/Northwind_small.sqlite")
-p2 = pd.read_sql_query("select OrderId, Quantity from OrderDetail", conn)
-p3 = pd.merge(p1, p2, how='left', left_on='Id', right_on='OrderId')
-p4 = p3[p3['ShipCity'] == 'Rio de JANEIRO']
-p4['RioId'] = p4.index
-total = p3[p3['ShipCity']=='Rio de Janeiro']['Quantity'].sum()
+def task2():
 
-total_orders = open("count.txt", 'w')
-total_orders.write(str(total))
-conn.close() 
+    p1 = pd.read_csv("./output_orders.csv")
+    conn = sqlite3.connect("/home/nome_do_usuário/airflow_tooltorial/data/Northwind_small.sqlite")
+    p2 = pd.read_sql_query("select OrderId, Quantity from OrderDetail", conn)
+    p3 = pd.merge(p1, p2, how='left', left_on='Id', right_on='OrderId')
+    p4 = p3[p3['ShipCity'] == 'Rio de JANEIRO']
+    p4['RioId'] = p4.index
+    total = p3[p3['ShipCity']=='Rio de Janeiro']['Quantity'].sum()
+
+    total_orders = open("count.txt", 'w')
+    total_orders.write(str(total))
+    conn.close() 
 ```
 
 **Atenção:** Para se conectar ao banco de dados da Northwind, você deve colocar o seu path do arquivo. Clique com o botão direito do mouse no banco de dados, copie o caminho e cole em ```conn = sqlite3.connect("seu_path_do_banco_de_dados")```.
 
-Já a tarefa 3 é a criação de uma variável no Airflow e a geração de um arquivo final_output.txt que conterá um texto codificado gerado automaticamente. O código a ser utilizado é:
+Já a tarefa 3 é a criação de uma variável no Airflow e a geração de um arquivo **final_output.txt** que conterá um texto codificado gerado automaticamente. O código a ser utilizado é:
 
 ```
 def task3():
@@ -187,7 +188,7 @@ Então, você precisa adicionar as tarefas, escolhendo o operador.
     )
 ```
 
-Por fim, você deve ordenar a execução das tasks. Como o exemplo acima segue uma lógica e possui certa dependência, a ordem a ser usada é a task1, task2 e a task3, neste último, export_final_output. 
+Por fim, você deve ordenar a execução das tasks. Como o exemplo acima segue uma lógica e possui certa dependência, a ordem a ser usada é a **task1**, **task2** e a **task3**,  neste último, **export_final_output**. 
 
 ```
 task1 >> task2 >> export_final_output
@@ -195,8 +196,8 @@ task1 >> task2 >> export_final_output
 
 ## Verificando a execução da DAG no Airflow e os resultados alcançados
 
-Você pode ver se a DAG apareceu no Airflow no menu DAGs da página. Se não tiver aparecido, você deve ir **Browse** --> **DAG runs** e ativar o **Auto-Refresh**. Assim, possivelmente ela aparecerá. Para verificar se ela está rodando conforme o planejado, após o tempo de execução da DAG, os quadradinhos ao lado de cada task devem estar verde escuro. Além disso, você deverá ter os arquivos: output_orders.csv, count.txt e final_output.txt.
+Você pode ver se a DAG apareceu no Airflow no menu DAGs da página. Se não tiver aparecido, você deve ir em **Browse** --> **DAG runs** e ativar o **Auto-Refresh**. Assim, possivelmente ela aparecerá. Para verificar se ela está rodando conforme o planejado, após o tempo de execução da DAG, os quadradinhos ao lado de cada task devem estar verde escuro. Além disso, você deverá ter os arquivos: **output_orders.csv**, **count.txt** e **final_output.txt**.
 
 ## Apenas executando o projeto
 
-Caso você queira apenas executar o projeto, você pode clonar este repositório e seguir até o item ```airflow standalone``` do Passo 2, tendo cuidado com os pontos de atenção dos Passo 1 e 3 (configuração de paths).
+Caso você queira apenas executar o projeto, você pode clonar este repositório e seguir até o item ```airflow standalone``` do Passo 2, tendo cuidado com os pontos de atenção dos Passos 1 e 3 (configuração de paths).
