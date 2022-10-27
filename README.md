@@ -1,138 +1,85 @@
-# Indicium Airflow Hands-on Tutorial
+# Desafio Airflow
 
-## O Problema
+Este desafio possui como objetivo a orquestração de dados no Airflow. Para isso, deve-se instalar o Airflow e subir uma DAG com três tasks. Aliás, sugere-se usar o Linux ou um ambiente remoto do Linux (WSL) disponível no Windows, pois o Windows não dá suporte para todos os pacotes que serão instalados e seria necessário encontrar os substitutos, o que aumentará a dificuldade no resolução do desafio.
 
-Vamos utilizar o mesmo problema do desafio de data engineering do processo seletivo da indicium:
+## 1o Passo - Preparando o ambiente para instalação do Airflow
 
-https://github.com/techindicium/code-challenge
+No VS Code, abra um terminal, crie a pasta '''airflow_tooltorial''' e abra-a. Basta escrever:
 
-Básicamente precisamos extrair os dados do banco northwind(banco demo de ecommerce) para hd local primeiro, e depois do hd para um segundo banco de dados. Também precisamos fazer load de um arquivo com informação de vendas que por algum motivo vem de outro sistema em um arquivo csv. 
+'''
+mkdir airflow_tooltorial
+cd airflow_tooltorial
+'''
 
-Com esses dados juntos em um database, gostariamos de saber quanto foi vendido em um dia
+Feito isso, você criará um ambiente virtual do python e também um arquivo .env para criar a variável de ambiente necessária para rodar o Airflow.
 
-O pipeline vai ficar algo parecido com o seguinte:
+'''
+python3 -m venv venv
+touch .env
+'''
 
-![image](https://user-images.githubusercontent.com/49417424/105993225-e2aefb00-6084-11eb-96af-3ec3716b151a.png)
+No arquivo .env, você exportará o Airflow_home. 
 
-e os dados no hd devem ficar parecido com o segundo esquema:
+'''
+export AIRFLOW_HOME=/home/nome_do_usuário/airflow_tooltorial/
+'''
 
-```
-/data/postgres/{table}/2021-01-01/file.format
-/data/postgres/{table}/2021-01-02/file.format
-/data/csv/2021-01-02/file.format
-```
+#Atenção:# Você deve adicionar o seu path da pasta airflow_tooltorial. Para encontrá-lo, você pode clicar com o botão direito no arquivo .env, copiar o caminho e colá-lo, apagando os itens após a última /.
 
-## Bem pouco sobre Data Engineering
+Agora, você precisará ativar a venv e o .env. Para isso, você deve digitar:
 
-Existem várias formas de definir o que faz um Engenheiro de Dados, mas dificimente o trabalho de um DE não vai incluir as seguintes funções:
-
-![img](images/plataforma-de-dados.png)
-
-Todas essas etapas(coleta, transformação, agendamento.. ) são areas que sózinhas podem ser assuntos de discussões infinitas. Na conversa de hoje 
-vamos focar na parte de agendamento e execução para começar a resolver o problema citado acima.
-
-![img](images/foco-do-dia.png)
-
-
-## Possiveis Soluções
-
-A primeira ideia que pode vir a cabeça é usar o crontab do linux. Crontab é bastante util para executar scripts agendados em horários específicos, mas e se 
-
-- precisarmos definir um número grande de dependencias?
-- re-executar o pipeline inteiro?
-- ter uma noção de quais etapas do pipeline estão demorando mais?
-- Enviar emails em caso de falha?
-
-Todos esses pontos são ou essencias ou muito importantes em projetos em produção.
-
-Tudo isso poderia ser feito desenvolvendo código próprio junto ao cron, mas já existem algumas plataforma com esse exato objetivo como Airflow, Prefect e Dagster.
-
-Airflow é a ferramenta mais utilizada e no momento que escrevo esse tutorial com o maior número de features e integrações com outros sistemas.
-
-Nesse tutorial seguiremos com Airflow.
-
-
-## O Airflow
-
-do site do próprio airflow:
-
-    Airflow is a platform created by the community to programmatically author, schedule and monitor workflows.
-
-
-## Primeiras Impressões
-
-Para ter uma ideia do que se trata a ferramenta, primeiro vamos executar o Airflow localmente com os DAGS(Directed acyclic graphs, o conceito usado para implementar pipelines).
-
-para instalar o airflow vamos primeiro criar um virtualenv e depois rodar o script install.sh. Esse script é um ctrl c ctrl v das instruções encontradas no site.
-
-```
-virtualenv venv -p python3
+'''
 source venv/bin/activate
-bash install.sh
-```
+source .env
+'''
+Obs.: Não esqueça de colocá-los no arquivo .gitignore.
 
-Se as coisas deram certo, no terminal vai aparecer a seguinte mensagem:
+## 2o Passo - Instalando o Airflow
 
-```
-standalone | 
-standalone | Airflow is ready
-standalone | Login with username: admin  password: sWFbFYrnYFAfYgY3
-standalone | Airflow Standalone is for development purposes only. Do not use this in production!
-standalone |
-```
+Para instalar o Airflow, você pode escrever no terminal um '''bash install.sh''' ou seguir os passos do arquivo install.sh a partir da linha 5.
 
-airflow roda na porta 8080, então podemos acessar em 
-http://localhost:8080
+'''
+AIRFLOW_VERSION=2.2.3
+PYTHON_VERSION="$(python --version | cut -d " " -f 2 | cut -d "." -f 1-2)"
+CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}"
+'''
 
-tomar um tempo aqui para ver a interface, as dags, tome um tempo para explorar a interface.
+Feita a instalação, agora você dá o comanda para inicializar o banco de dados, criar um usuário, gerar uma senha e demais componentes.
 
-## Limpando os Dags de Exemplo
-
-Para tirar os dags de exemplo e começar um dag nosso, podemos apagar os arquivos
-airflow-data/data e airflow-data/admin-password.txt, e editar o arquivo airflow.cfg trocando:
-```
-load_examples = True
-```
-para
-```
-load_examples = False
-```
-
-Feito isso, primeiro precisamos configurar o ambiente para dizer onde vão ficar os arquivos de config do airflow, fazemos isso configurando a seguinte variavel de ambiente:
-
-```
-export AIRFLOW_HOME=./airflow-data
-```
-
-Dessa forma configuramos o airflow para colocar suas configurações dentro da pasta desse tutorial na pasta /airflow-data
-
-Na sequência rodamos o comando para resetar o db do airflow e fazer start do airflow local:
-
-```
-airflow db reset
+'''
 airflow standalone
-```
+'''
 
-## Escrevendo primeiro DAG
+Se tudo der certo, visitando o #localhost:8080# no navegador, você deve conseguir acessar o Airflow realizando o login. O username é #admin#, já a senha é possível identificá-la enquanto estiver rodando o airflow standalone ou a partir do arquivo standalone_admin_password.txt.
 
-O Airflow procura por DAGs na em arquivos .py no diretório:
+## 3o Passo - Criando a DAG com as três tasks
 
-```
-AIRFLOW_HOME/dags
-```
+Crie uma pasta dags e com ela aberta, crie um arquivo .py para desenvolver a DAG.
 
-Em nosso caso AIRFLOW_HOME é airflow-data, entao criaremos uma pasta dags e um arquivo
-elt_dag.py dentro de airflow-data com o seguinte conteudo:
+'''
+mkdir dags
+touch tarefas.py
+'''
 
-```py
+Em tarefas.py comece a desenvolver a DAG. Faça as importações da classe DAG, dos operators e das bibliotecas necessárias.
+
+'''
 from airflow.utils.edgemodifier import Label
 from datetime import datetime, timedelta
 from textwrap import dedent
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from airflow import DAG
+from airflow.models import Variable
+import sqlite3
+import csv
+import pandas as pd
+'''
 
-# These args will get passed on to each operator
-# You can override them on a per-task basis during operator initialization
+Crie os argumentos que serão passadas para cada operador.
+
+'''
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -142,305 +89,112 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
 }
+'''
 
+Elabore as tasks. A primeira tarefa será ler a tabela #Order# do banco de dados #Northwind_small.sqlite# e a transformar em um aquivo .csv. Para isso, basta escrever:
+
+'''
+def task1():
+
+  conn = sqlite3.connect("/home/nome_do_usuário/airflow_tooltorial/data/Northwind_small.sqlite")
+  cursor = conn.cursor()
+  cursor.execute("""SELECT * FROM "Order";
+  """)
+  with open("output_orders.csv", 'w', newline='') as csv_file: 
+      csv_writer = csv.writer(csv_file)
+      csv_writer.writerow([i[0] for i in cursor.description]) 
+      csv_writer.writerows(cursor)
+  conn.close() 
+'''
+
+# Atenção:# Para se conectar ao banco de dados da Northwind, você deve colocar o seu path do arquivo. Clique com o botão direito do mouse no banco de dados, copie o caminho e cole em '''conn = sqlite3.connect("seu_path_do_banco_de_dados")'''
+
+A segunda tarefa será ler os dados da tabela #OrdersDetail# e realizar um join com o arquivo #output_orders.csv# criado. Além de gerar um arquivo #count.txt# com a soma da quantidade vendida com destino ao Rio de Janeiro. Use a função '''str()''' para converter o número em texto. Segue o código:
+
+'''
+p1 = pd.read_csv("./output_orders.csv")
+  conn = sqlite3.connect("/home/nome_do_usuário/airflow_tooltorial/data/Northwind_small.sqlite")
+  p2 = pd.read_sql_query("select OrderId, Quantity from OrderDetail", conn)
+  p3 = pd.merge(p1, p2, how='left', left_on='Id', right_on='OrderId')
+  p4 = p3[p3['ShipCity'] == 'Rio de JANEIRO']
+  p4['RioId'] = p4.index
+  total = p3[p3['ShipCity']=='Rio de Janeiro']['Quantity'].sum()
+
+  total_orders = open("count.txt", 'w')
+  total_orders.write(str(total))
+  conn.close() 
+'''
+# Atenção:# Para se conectar ao banco de dados da Northwind, você deve colocar o seu path do arquivo. Clique com o botão direito do mouse no banco de dados, copie o caminho e cole em '''conn = sqlite3.connect("seu_path_do_banco_de_dados")'''
+
+Já a tarefa 3 será a criação de uma variável no Airflow e a geração de um arquivo final_output.txt que conterá um texto codificado gerado automaticamente. O código a ser utilizado é:
+
+'''
+def task3():
+    
+    with open('count.txt') as f:
+        count = f.readlines()[0]
+
+    my_email = Variable.get("my_email")
+    message = my_email+count
+    message_bytes = message.encode('ascii')
+    base64_bytes = base64.b64encode(message_bytes)
+    base64_message = base64_bytes.decode('ascii')
+
+    with open("final_output.txt","w") as f:
+        f.write(base64_message)
+    return None
+'''
+
+Para criar a variável, você deve acessar a plataforma do Airflow, ir em #Admin# --> #Variables# e clicar em #+#. No campo #Key#, escreva '''my_email''' e no #value# o seu e-mail. Clique em #Save#.
+
+Após isso, você deve criar o objeto DAG do Airflow onde se define parâmetros para a respectiva DAG, como o identificador exclusivo, a data que ela começará a ser agendada, o intervalo de tempo que ela é acionada, dentre outros.
+
+'''
 with DAG(
-    'NorthwindELT',
+    'AtividadePrática',
     default_args=default_args,
-    description='A ELT dag for the Northwind ECommerceData',
+    description='Atividade Prática - Módulo V',
     schedule_interval=timedelta(days=1),
     start_date=datetime(2021, 1, 1),
     catchup=False,
     tags=['example'],
 ) as dag:
     dag.doc_md = """
-        ELT Diária do banco de dados de ecommerce Northwind,
-        começando em 2022-02-07. 
+        Esse é o desafio de Airflow da Indicium.
     """
+'''
 
-    extract_postgres_task = BashOperator(
-        task_id='extract_postgres',
-        bash_command='echo "Extracted!" ',
+Então, você precisa adicionar as tarefas, escolhendo o operador.
+
+'''
+    task1 = PythonOperator(
+        task_id='transform_in_csv',
+        python_callable=task1,
+        provide_context=True
     )
-    
-    extract_postgres_task.doc_md = dedent(
-        """\
-    #### Task Documentation
-
-    Essa task extrai os dados do banco de dados postgres, parte de baixo do step 1 da imagem:
- 
-    ![img](https://user-images.githubusercontent.com/49417424/105993225-e2aefb00-6084-11eb-96af-3ec3716b151a.png)
-
-    """
-    )
-
-```
-
-Dê um refresh no airflow e veja se o dag apareceu.
-
-Aqui podemos parar para entender alguns conceitos do airflow.
-
-
-## Conceito DAG do Airflow
-
-Pegando o trecho da parte de DAG do nosso primeiro dag:
-
-```py
-from airflow import DAG
-
-# These args will get passed on to each operator
-# You can override them on a per-task basis during operator initialization
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'email': ['engineering@indicium.tech'],
-    'email_on_failure': True,
-    'email_on_retry': True,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-}
-
-with DAG(
-    'NorthwindELT',
-    default_args=default_args,
-    description='A ELT dag for the Northwind ECommerceData',
-    schedule_interval=timedelta(days=1),
-    start_date=datetime(2022, 2, 1),
-    catchup=False,
-    tags=['ELT'],
-) as dag:
-```
-
-O que estamos fazendo aqui é declarando e configurando um DAG e as propriedades comuns a todas as tasks na propriedade default_args.
-
-Todas as tasks do nosso dag vão ter:
-  - o dono 'airflow'
-  - nao vão depender de execuções passadas
-  - vão mandar email em retry e falha para engineering@indicium.tech
-  -   ...
-
-E nosso DAG vai chamar NorthwindELT e rodar diariamente na hora 0.
-
-
-## Conceito Operator do  Airflow
-
-Da documentação:
-
-*An operator represents a single, ideally idempotent, task. Operators determine what actually executes when your DAG runs.*
-
-Ou seja, quem de fato executa alguma tarefa são os operators e não o código do DAG. O código que vimos na logo acima apenas declara um dag, nada de fato vai ser executado naquele código.
-
-Essa distinção é importante porque o Airflow interpreta o código do dag com frequencia bem alta, algumas vezes por minuto(isso é configurável).
-
-Se alguma operação grande for executada no código do dag em si, essa operação vai ser executada o tempo todo, e não apenas no agendamento declarado no contexto do DAG.
-
-No nosso caso, o operator é:
-
-```py
-    extract_postgres_task = BashOperator(
-        task_id='extract_postgres',
-        bash_command='echo "Extracted!" ',
-    )
-```
-
-O código que vai ser de fato excecutado nesse caso é o bash_command, nesse exemplo:
-
-```
-echo "Extracted!"
-```
-
-se olharmos o log da task executada, podemos ver:
-
-```
-[2022-02-09, 18:10:31 UTC] {subprocess.py:74} INFO - Running command: ['bash', '-c', 'echo "Extracted!" ']
-[2022-02-09, 18:10:31 UTC] {subprocess.py:85} INFO - Output:
-[2022-02-09, 18:10:31 UTC] {subprocess.py:89} INFO - Extracted!
-```
-
-## Declarando Dependencias
-
-Agora temos um DAG com uma task, nao parece um caso de uso altamente justificavel para um deploy de Airflow. Mas conforme a descrição do problema, precisamos também fazer load dos dados extraidos para um banco de dados, e precisamos fazer load do arquivo csv para o banco tambem.
-
-Vamos montar esse fluxo, primeiro criamos mais 2 tasks:
-
-```py
-
-    load_postgres_data_to_db_task = BashOperator(
-        task_id='load_postgres',
-        bash_command='echo "Loaded postgres data to db!" ',
+    task2 = PythonOperator(
+        task_id='orders_number',
+        python_callable=task2,
+        provide_context=True
     )
 
-    load_postgres_data_to_db_task.doc_md = dedent(
-        """\
-    #### Task Documentation
-
-    Essa task faz load dos dados extraidos do postgres para hd, load para o banco de dados
-    da parte dos dados extraidos do postgres no step 2 da imagem:
- 
-    ![img](https://user-images.githubusercontent.com/49417424/105993225-e2aefb00-6084-11eb-96af-3ec3716b151a.png)
-
-    """
+    export_final_output = PythonOperator(
+        task_id='export_final_output',
+        python_callable=task3,
+        provide_context=True
     )
+'''
 
-    load_csv_data_to_db_task = BashOperator(
-        task_id='load_csv',
-        bash_command='echo "Loaded csv data to db!" ',
-    )
+Por fim, você deve ordenar a execução das tasks. Como o exemplo acima segue uma lógica e possui certa dependência, a ordem a ser usada é a task1, task2 e a task3, neste último, export_final_output. 
 
-    load_csv_data_to_db_task.doc_md = dedent(
-        """\
-    #### Task Documentation
+'''
+task1 >> task2 >> export_final_output
+'''
 
-    Essa task faz load dos dados csv, load para o banco de dados
-    da parte dos dados extraidos do csv no step 2 da imagem: 
-    
-    ![img](https://user-images.githubusercontent.com/49417424/105993225-e2aefb00-6084-11eb-96af-3ec3716b151a.png)
+## Verificando a execução da DAG no Airflow e os resultados alcançados
 
-    """
-    )
-```
+Você pode ver se a DAG apareceu no Airflow no menu DAGs da página. Se não tiver aparecido, você deve ir #Browse# --> DAG runs e ativar o Auto-Refresh. Assim, possivelmente ela aparecerá. Para verificar se ela está rodando conforme o planejado, após o tempo de execução da DAG, os quadradinhos ao lado de cada task devem estar verde escuro. Além disso, você deverá ter os arquvos: output_orders.csv, count.txt e final_output.txt.
 
-E na sequencia definimos a dependência:
+## Apenas executando o projeto
 
-```py
-    extract_postgres_task >> load_postgres_data_to_db_task
-    extract_postgres_task >> load_csv_data_to_db_task    
-```
-
-Agora podemos ver que as duas tasks novas dependem da primeira task que criamos.
-
-Aqui podemos ver que essa dependencia não faz muito sentido, não precisamos da extração do postgres para fazer o load dos dados csv para o banco. 
-
-Podemos simplesmente tirar a dependencia entre elas
-
-
-```py
-    extract_postgres_task >> load_postgres_data_to_db_task
-    extract_postgres_task >> load_csv_data_to_db_task    
-```
-
-Para finalizar a o problema enunciado no inicio, precisariamos fazer uma task para fazer uma query no banco após os 2 loads terem sido feitos:
-
-```py
-    run_sales_query_task = BashOperator(
-        task_id='run_sales_query_task',
-        bash_command='echo "we sold alot!!" ',
-    )
-
-    run_sales_query_task.doc_md = dedent(
-        """\
-    #### Task Documentation
-        Query em cima do banco consolidado, pegando o valor das vendas para o dia
-    """
-
-    
-```
-
-e colocamos as novas dependencias:
-
-```py
-    extract_postgres_task >> load_postgres_data_to_db_task >> Label("Resultado Consolidado") >> run_sales_query_task
-    load_csv_data_to_db_task >> Label("Resultado Consolidado") >> run_sales_query_task
-```
-
-
-## Revendo Objetivos
-
-Citamos no inicio que um projeto de produção deveria ter os seguintes aspectos:
-
-- precisarmos definir um número grande de dependencias?
-- re-executar o pipeline inteiro?
-- ter uma noção de quais etapas do pipeline estão demorando mais?
-- Enviar emails em caso de falha?
-
-O primeiro ponto deve ter ficado evidente com os passos anteriores.
-
-### **Re-executar o pipeline inteiro?**
-
-Isso podemos fazer pela interface, clicar no quadrado de cima, e apertar clear.
-Tambem podemos usar o cli do terminal do airflow, docs: https://airflow.apache.org/docs/apache-airflow/stable/cli-and-env-variables-ref.html
-
-Para nosso caso seria algo:
-
-```
-airflow clear NorthwindELT -s 2022-02-07 -e 2022-02-08
-```
-
-Vamos deixar para voces fazerem o teste e fica o desafio de corrigir o comando. É bom lembrar que quase todas as operações possiveis pela interface também é possível via CLI.
-
-
-### **Ter uma noção de quais etapas do pipeline estão demorando mais?**
-
-Vamos colocar um sleep na task do postgres para que uma demore mais que o resto:
-
-
-```py
-    extract_postgres_task = BashOperator(
-        task_id='extract_postgres',
-        -- bash_command='echo "Extracted!" ',
-        ++ bash_command='sleep 10 && echo "Extracted!" ',
-    )
-```
-
-Agora façamos o clear denovo e depois olhamos a aba gantt
-
-Aqui vai ficar claro que as tasks mesmo sem inter dependencias, não executaram em paralelo. Isso acontece porque o airflow tem o conceito de Executors, isso é uma configuração do airflow para definir o modo que ele vai executar as tasks, não vamos entrar em muitos detalhes aqui mas o airflow possue alguns executores, como KubernetesExecutor, SequentialExecutor e LocalExecutor. Na configuração padrão, o modo é o SequentialExecutor que roda apenas uma task por vez.
-
-### **Enviar emails em caso de falha?**
-
-vamos fazer uma task falhar:
-
-```py
-    extract_postgres_task = BashOperator(
-        task_id='extract_postgres',
-        -- bash_command='echo "Extracted!" ',
-        ++ bash_command='isaa!!!',
-    )
-```
-
-se olharmos os logs, vamos ver que o airflow tentou enviar um email, mas como não configuramos o servidor SMTP o envio também falhou.
-
-
-## Outros Conceitos Importantes
-
-### Airflow Variables
-
-O Airflow possue o conceito de variaveis que permite configurar via cli ou UI valores utilizados no dag.
-Uma vez criado a variavél, ela pode ser utilizada no formato:
-
-```py
-from airflow.models import Variable
-email_list = Variable.get("email_list")
-
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'email': email_list,
-    'email_on_failure': True,
-    'email_on_retry': True,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5),
-}
-```
-
-nesse exemplo conseguimos mudar quem recebe emails de falha sem dificuldade.
-
-Uma desvantagem bastante importante de notar aqui, é que essas variaveis nao ficam versionadas em nenhum lugar
-se alguem alterar uma variavel pelo airflow existe boa chance de ninguem saber que isso aconteceu.
-
-### Airflow Connections
-
-para evitar configurar em diversos pontos conexões com sistemas externos, e evitar espalhar informações como usuários e senhas desses sistemas, o airflow possue o conceito de connections.
-
-Assim como variables essas Connections podem ser criadas por cli ou pela UI
-
-por exemplo para usar o Operator postgres para executar queries:
-
-```py
-get_all_pets = PostgresOperator(
-    task_id="get_northwind_sales",
-    postgres_conn_id="nortwhwind_postgres",
-    sql="SELECT * FROM pet;",
-)
-```
-[Todo] colocar isso no nosso dag com exemplo reallendo do banco northwind
-
+Caso você queira apenas executar o projeto, você pode clonar esse repositório e seguir até o passo 2 no item '''airflow standalone''', tendo cuidado com os pontos de atenção do 1o Passo e do 3o (configuração de paths).

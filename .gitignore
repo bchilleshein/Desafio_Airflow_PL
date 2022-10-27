@@ -50,3 +50,19 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Virtual Environmental
+.env
+venv
+
+# Project Files
+airflow-webserver.pid
+airflow.cfg
+airflow.db
+count.txt
+example_desafio.py
+final_output.txt
+logs/
+output_orders.csv
+standalone_admin_password.txt
+webserver_config.py
+
