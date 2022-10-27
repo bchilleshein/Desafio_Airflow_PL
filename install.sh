@@ -1,5 +1,5 @@
 # Airflow needs a home. `~/airflow` is the default, but you can put it
-# somewhere else if you prefer (optional)
+# somewhere else if you prefer (optional).
 export AIRFLOW_HOME=./airflow-data
 
 # Install Airflow using the constraints file
